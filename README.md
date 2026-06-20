@@ -85,7 +85,7 @@ The Executive Dashboard monitors:
 
 # Dashboard 1: Hospital Operations Executive Dashboard
 
-![Hospital Operations Executive Dashboard](screenshots/hero_dashboard1.png)
+![Hospital Operations Executive Dashboard](screenshots/hero_dashboard.png)
 
 ### Key Components
 
