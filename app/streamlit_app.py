@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from pathlib import Path
 
 # -------------------------------------------------------------
@@ -82,6 +83,11 @@ st.markdown(
         .insight-text {
             font-size: 14.5px;
             line-height: 1.35;
+        }
+
+        /* Safety: hide accidental Plotly title placeholder if Plotly renders undefined */
+        .js-plotly-plot .gtitle {
+            display: none !important;
         }
     </style>
     """,
@@ -252,6 +258,76 @@ def create_alert_flag(row):
     return "Stable"
 
 
+def standardize_bottleneck_reason(value: object) -> str:
+    """Group operational bottleneck labels into the 7 clean dashboard categories requested."""
+    if pd.isna(value):
+        return "No Bottleneck"
+
+    raw = str(value).strip()
+    text = raw.lower().replace("_", " ").replace("-", " ")
+
+    # Keep already-clean labels stable.
+    clean_labels = {
+        "high resource": "High Resource",
+        "long los": "Long LOS",
+        "extended wait time": "Extended Wait Time",
+        "bed occupancy": "Bed Occupancy",
+        "high long los": "High Long LOS",
+        "no bottleneck": "No Bottleneck",
+        "readmission pressure": "Readmission Pressure",
+    }
+    if text in clean_labels:
+        return clean_labels[text]
+
+    if any(term in text for term in ["no bottleneck", "none", "stable", "normal", "no issue"]):
+        return "No Bottleneck"
+    if "readmission" in text:
+        return "Readmission Pressure"
+    if ("high" in text and ("los" in text or "length of stay" in text)) or "extended los" in text:
+        return "High Long LOS"
+    if "los" in text or "length of stay" in text:
+        return "Long LOS"
+    if "wait" in text or "delay" in text or "er" in text or "ed" in text:
+        return "Extended Wait Time"
+    if "occupancy" in text or "bed" in text or "capacity" in text:
+        return "Bed Occupancy"
+    if "resource" in text or "staff" in text or "strain" in text or "utilization" in text:
+        return "High Resource"
+
+    # Any unexpected legacy value is still grouped so the chart never grows beyond 7 categories.
+    return "High Resource"
+
+
+
+def build_exclusive_bottleneck_categories(df: pd.DataFrame) -> pd.Series:
+    """
+    Build one mutually exclusive bottleneck category per row.
+    This keeps the Operational Bottlenecks chart total equal to the filtered record count.
+    It also allows No Bottleneck and Bed Occupancy to appear without double-counting rows.
+    """
+    categories = df["bottleneck_reason"].apply(standardize_bottleneck_reason).copy()
+
+    low_risk_conditions = []
+    if "capacity_strain_score" in df.columns:
+        low_risk_conditions.append(df["capacity_strain_score"].fillna(0) < 60)
+    if "bed_occupancy_rate" in df.columns:
+        low_risk_conditions.append(df["bed_occupancy_rate"].fillna(0) < 80)
+    if "er_wait_time_minutes" in df.columns:
+        low_risk_conditions.append(df["er_wait_time_minutes"].fillna(0) < 45)
+
+    if low_risk_conditions:
+        low_risk_mask = low_risk_conditions[0]
+        for condition in low_risk_conditions[1:]:
+            low_risk_mask = low_risk_mask & condition
+        categories.loc[low_risk_mask] = "No Bottleneck"
+
+    if "bed_occupancy_rate" in df.columns:
+        bed_mask = (df["bed_occupancy_rate"].fillna(0) >= 85) & (categories != "No Bottleneck")
+        categories.loc[bed_mask] = "Bed Occupancy"
+
+    return categories
+
+
 def colorful_decision_cards():
     st.divider()
     st.markdown('<div class="section-title">Executive Decision Summary</div>', unsafe_allow_html=True)
@@ -282,6 +358,31 @@ def chart_layout(fig, height=430):
         font=dict(size=12),
         title_font=dict(size=22, color="#2f6fb3"),
     )
+    return fig
+
+
+def clean_title(title: str):
+    """Use Plotly title only; Streamlit section headers are intentionally not duplicated."""
+    return title
+
+
+def top_n_with_other(df: pd.DataFrame, label_col: str, value_col: str, n: int = 6) -> pd.DataFrame:
+    """Return the top N categories and group the rest as Other, keeping the final chart clean."""
+    if df.empty or label_col not in df.columns or value_col not in df.columns:
+        return df
+    ordered = df.sort_values(value_col, ascending=False).copy()
+    top = ordered.head(n).copy()
+    rest = ordered.iloc[n:]
+    if not rest.empty:
+        other = pd.DataFrame([{label_col: "Other", value_col: rest[value_col].sum()}])
+        top = pd.concat([top, other], ignore_index=True)
+    return top.sort_values(value_col, ascending=True)
+
+
+def add_top_x_axis(fig):
+    """Move heatmap column headers to the top for better readability."""
+    fig.update_xaxes(side="top")
+    fig.update_layout(margin=dict(l=10, r=10, t=80, b=25))
     return fig
 
 
@@ -333,50 +434,83 @@ st.divider()
 # Large/important visuals are standalone.
 # -------------------------------------------------------------
 st.markdown('<div class="section-title">Hospital Alerts & Bottlenecks</div>', unsafe_allow_html=True)
-left, right = st.columns(2)
 
-with left:
-    if "department" in filtered.columns:
-        alert_df = filtered.copy()
-        alert_df["hospital_alert"] = alert_df.apply(create_alert_flag, axis=1)
-        alert_summary = alert_df.groupby(["department", "hospital_alert"], as_index=False).agg(
-            patients=("patient_id", "nunique") if "patient_id" in alert_df.columns else ("department", "size")
-        )
-        fig_alert = px.bar(
-            alert_summary,
-            x="patients",
-            y="department",
-            color="hospital_alert",
-            orientation="h",
-            title="Hospital Alert Summary",
-            text="patients",
-            color_discrete_map={"High Risk": "#2b5c8a", "Moderate Risk": "#49a6b8", "Stable": "#a7d8d4"},
-        )
-        fig_alert.update_layout(yaxis_title="", xaxis_title="")
-        st.plotly_chart(chart_layout(fig_alert, 430), use_container_width=True)
+# Full-width alert chart for a cleaner executive view.
+if "department" in filtered.columns:
+    alert_df = filtered.copy()
+    alert_df["hospital_alert"] = alert_df.apply(create_alert_flag, axis=1)
+    alert_summary = alert_df.groupby(["department", "hospital_alert"], as_index=False).agg(
+        patients=("patient_id", "nunique") if "patient_id" in alert_df.columns else ("department", "size")
+    )
+    dept_order = (
+        alert_summary.groupby("department")["patients"]
+        .sum()
+        .sort_values(ascending=True)
+        .index.tolist()
+    )
+    fig_alert = px.bar(
+        alert_summary,
+        x="patients",
+        y="department",
+        color="hospital_alert",
+        orientation="h",
+        title="Hospital Alert Summary",
+        text="patients",
+        category_orders={
+            "department": dept_order,
+            "hospital_alert": ["High Risk", "Moderate Risk", "Stable"],
+        },
+        color_discrete_map={"High Risk": "#2b5c8a", "Moderate Risk": "#49a6b8", "Stable": "#a7d8d4"},
+    )
+    fig_alert.update_traces(textposition="outside", cliponaxis=False)
+    fig_alert.update_layout(
+        yaxis_title="",
+        xaxis_title="Patients",
+        legend_title="Alert Level",
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+    )
+    st.plotly_chart(chart_layout(fig_alert, 500), use_container_width=True)
 
-with right:
-    if "bottleneck_reason" in filtered.columns:
-        bottlenecks = (
-            filtered.groupby("bottleneck_reason", as_index=False)
-            .size()
-            .rename(columns={"size": "count"})
-            .sort_values("count", ascending=True)
-        )
-        fig_bottleneck = px.bar(
-            bottlenecks,
-            x="count",
-            y="bottleneck_reason",
-            orientation="h",
-            title="Operational Bottlenecks",
-            text="count",
-            color_discrete_sequence=["#5a86b5"],
-        )
-        fig_bottleneck.update_layout(yaxis_title="", xaxis_title="")
-        st.plotly_chart(chart_layout(fig_bottleneck, 430), use_container_width=True)
+# Clean 7-category bottleneck chart using the requested names only.
+if "bottleneck_reason" in filtered.columns:
+    bottleneck_order = [
+        "High Resource",
+        "Long LOS",
+        "Extended Wait Time",
+        "Bed Occupancy",
+        "High Long LOS",
+        "No Bottleneck",
+        "Readmission Pressure",
+    ]
+    bottleneck_df = filtered.copy()
+    bottleneck_df["bottleneck_reason_clean"] = build_exclusive_bottleneck_categories(bottleneck_df)
+    bottlenecks = (
+        bottleneck_df.groupby("bottleneck_reason_clean", as_index=False)
+        .size()
+        .rename(columns={"size": "count"})
+    )
+    bottlenecks = (
+        pd.DataFrame({"bottleneck_reason_clean": bottleneck_order})
+        .merge(bottlenecks, on="bottleneck_reason_clean", how="left")
+        .fillna({"count": 0})
+    )
+    bottlenecks["count"] = bottlenecks["count"].astype(int)
+    bottlenecks = bottlenecks.sort_values("count", ascending=True)
+
+    fig_bottleneck = px.bar(
+        bottlenecks,
+        x="count",
+        y="bottleneck_reason_clean",
+        orientation="h",
+        title="Operational Bottlenecks",
+        text="count",
+        color_discrete_sequence=["#008c8c"],
+    )
+    fig_bottleneck.update_traces(textposition="outside", cliponaxis=False, marker_color="#008c8c", showlegend=False)
+    fig_bottleneck.update_layout(yaxis_title="", xaxis_title="Cases")
+    st.plotly_chart(chart_layout(fig_bottleneck, 470), use_container_width=True)
 
 # Standalone: Capacity Strain Heatmap
-st.markdown('<div class="section-title">Capacity Strain Heatmap</div>', unsafe_allow_html=True)
 if {"department", "month", "capacity_strain_score"}.issubset(filtered.columns):
     heat = filtered.groupby(["department", "month"], as_index=False).agg(
         capacity_strain=("capacity_strain_score", "mean")
@@ -395,7 +529,6 @@ if {"department", "month", "capacity_strain_score"}.issubset(filtered.columns):
     st.plotly_chart(chart_layout(fig_heat, 520), use_container_width=True)
 
 # Standalone: Department Performance Matrix
-st.markdown('<div class="section-title">Department Performance Matrix</div>', unsafe_allow_html=True)
 required = {"department", "bed_occupancy_rate", "length_of_stay_days", "er_wait_time_minutes", "patient_satisfaction_score", "readmitted_30_days"}
 if required.issubset(filtered.columns):
     matrix = filtered.groupby("department", as_index=False).agg(
@@ -406,20 +539,25 @@ if required.issubset(filtered.columns):
         Readmission=("readmitted_30_days", "mean"),
     )
     matrix["Readmission"] = matrix["Readmission"] * 100 if matrix["Readmission"].max() <= 1.5 else matrix["Readmission"]
-    melted = matrix.melt(id_vars="department", var_name="KPI", value_name="Value")
-    melted["KPI"] = melted["KPI"].replace({"Wait_Time": "Wait Time"})
-    fig_matrix = px.scatter(
-        melted,
-        x="KPI",
-        y="department",
-        color="Value",
-        size=[10] * len(melted),
-        title="Department Performance Matrix",
-        color_continuous_scale="RdYlGn_r",
+    matrix = matrix.sort_values("department")
+    kpis = ["Occupancy", "LOS", "Wait_Time", "Satisfaction", "Readmission"]
+    labels = ["Occupancy", "LOS", "Wait Time", "Satisfaction", "Readmission"]
+    z_values = matrix[kpis].round(2).values
+    text_values = [[f"{val:.2f}" for val in row] for row in z_values]
+    fig_matrix = go.Figure(
+        data=go.Heatmap(
+            z=z_values,
+            x=labels,
+            y=matrix["department"],
+            text=text_values,
+            texttemplate="%{text}",
+            colorscale="Teal",
+            colorbar=dict(title="Value"),
+            hovertemplate="Department=%{y}<br>KPI=%{x}<br>Value=%{z:.2f}<extra></extra>",
+        )
     )
-    fig_matrix.update_traces(marker=dict(symbol="square", sizemode="diameter", size=14))
-    fig_matrix.update_layout(xaxis_title="", yaxis_title="Department")
-    st.plotly_chart(chart_layout(fig_matrix, 520), use_container_width=True)
+    fig_matrix.update_layout(title="Department Performance Matrix", xaxis_title="", yaxis_title="Department")
+    st.plotly_chart(add_top_x_axis(chart_layout(fig_matrix, 540)), use_container_width=True)
 
 # Standalone: Monthly KPI Trend
 st.markdown('<div class="section-title">Monthly KPI Trend</div>', unsafe_allow_html=True)
@@ -436,10 +574,30 @@ selected_kpi = st.selectbox("Select a KPI", list(available_options.keys()), inde
 trend = filtered.groupby("month", as_index=False).agg(selected_kpi=(available_options[selected_kpi], "mean"))
 if selected_kpi in ["Readmission", "Treatment Success"]:
     trend["selected_kpi"] = trend["selected_kpi"] * 100 if trend["selected_kpi"].max() <= 1.5 else trend["selected_kpi"]
-fig_trend = px.line(trend, x="month", y="selected_kpi", title="Monthly KPI Trend", markers=True)
-fig_trend.update_traces(hovertemplate="Month=%{x}<br>Value=%{y:.2f}<extra></extra>")
-fig_trend.update_layout(xaxis_title="", yaxis_title=selected_kpi)
-st.plotly_chart(chart_layout(fig_trend, 500), use_container_width=True)
+# Build the Monthly KPI chart without any Plotly title placeholder.
+# This removes the unwanted "undefined" word under the KPI selector.
+fig_trend = go.Figure()
+fig_trend.add_trace(
+    go.Scatter(
+        x=trend["month"],
+        y=trend["selected_kpi"],
+        mode="lines+markers",
+        hovertemplate="Month=%{x}<br>Value=%{y:.2f}<extra></extra>",
+        name="",
+        showlegend=False,
+    )
+)
+fig_trend.update_layout(
+    title=dict(text=""),
+    showlegend=False,
+    xaxis_title="",
+    yaxis_title=selected_kpi,
+    margin=dict(l=10, r=10, t=8, b=20),
+    height=500,
+    font=dict(size=12),
+)
+fig_trend.update_annotations(text="")
+st.plotly_chart(fig_trend, use_container_width=True)
 
 # -------------------------------------------------------------
 # Dashboard 2: Patient Flow & Capacity Analytics
@@ -492,7 +650,6 @@ with r1c2:
         st.plotly_chart(chart_layout(fig_throughput, 420), use_container_width=True)
 
 # Standalone: Admissions Trend
-st.markdown('<div class="section-title">Admissions Trend</div>', unsafe_allow_html=True)
 if {"department", "month"}.issubset(filtered.columns):
     admissions = filtered.groupby(["department", "month"], as_index=False).agg(
         patients=("patient_id", "nunique") if "patient_id" in filtered.columns else ("department", "size")
@@ -503,54 +660,57 @@ if {"department", "month"}.issubset(filtered.columns):
         y="department",
         z="patients",
         histfunc="avg",
-        text_auto=True,
+        text_auto=".0f",
         title="Admissions Trend",
         color_continuous_scale="Teal",
     )
+    fig_adm.update_traces(texttemplate="%{z:.0f}", hovertemplate="Month=%{x}<br>Department=%{y}<br>Patients=%{z:.0f}<extra></extra>")
     fig_adm.update_layout(xaxis_title="", yaxis_title="Department")
-    st.plotly_chart(chart_layout(fig_adm, 520), use_container_width=True)
+    st.plotly_chart(add_top_x_axis(chart_layout(fig_adm, 540)), use_container_width=True)
 
-# Remaining detailed charts: two per view where appropriate.
-r2c1, r2c2 = st.columns(2)
-with r2c1:
-    if {"department", "treatment_success"}.issubset(filtered.columns):
-        success = filtered.groupby("department", as_index=False).agg(
-            success=("treatment_success", "mean")
-        ).sort_values("success", ascending=True)
-        success["success_pct"] = success["success"] * 100 if success["success"].max() <= 1.5 else success["success"]
-        fig_success = px.bar(
-            success,
-            x="success_pct",
-            y="department",
-            orientation="h",
-            title="Treatment Success",
-            text="success_pct",
-            color_discrete_sequence=["#4f7fac"],
-        )
-        fig_success.update_traces(texttemplate="%{text:.2f}%", textposition="outside")
-        fig_success.update_layout(xaxis_title="Treatment Success Rate", yaxis_title="")
-        st.plotly_chart(chart_layout(fig_success, 470), use_container_width=True)
+# Remaining detailed charts. Treatment Success stays compact; LOS Analysis stands alone.
+if {"department", "treatment_success"}.issubset(filtered.columns):
+    success = filtered.groupby("department", as_index=False).agg(
+        success=("treatment_success", "mean")
+    ).sort_values("success", ascending=True)
+    success["success_pct"] = success["success"] * 100 if success["success"].max() <= 1.5 else success["success"]
+    fig_success = px.bar(
+        success,
+        x="success_pct",
+        y="department",
+        orientation="h",
+        title="Treatment Success",
+        text="success_pct",
+        color_discrete_sequence=["#4f7fac"],
+    )
+    fig_success.update_traces(texttemplate="%{text:.2f}%", textposition="outside", cliponaxis=False)
+    fig_success.update_layout(
+        xaxis_title="Treatment Success Rate",
+        yaxis_title="",
+        xaxis=dict(range=[0, max(105, float(success["success_pct"].max()) + 8)]),
+        margin=dict(l=10, r=80, t=55, b=20),
+    )
+    st.plotly_chart(chart_layout(fig_success, 460), use_container_width=True)
 
-with r2c2:
-    if {"department", "severity_level", "length_of_stay_days"}.issubset(filtered.columns):
-        los = filtered.groupby(["department", "severity_level"], as_index=False).agg(
-            avg_los=("length_of_stay_days", "mean")
-        )
-        fig_los = px.density_heatmap(
-            los,
-            x="severity_level",
-            y="department",
-            z="avg_los",
-            histfunc="avg",
-            text_auto=".2f",
-            title="LOS Analysis",
-            color_continuous_scale="Teal",
-        )
-        fig_los.update_layout(xaxis_title="Severity Level", yaxis_title="Department")
-        st.plotly_chart(chart_layout(fig_los, 470), use_container_width=True)
+if {"department", "severity_level", "length_of_stay_days"}.issubset(filtered.columns):
+    los = filtered.groupby(["department", "severity_level"], as_index=False).agg(
+        avg_los=("length_of_stay_days", "mean")
+    )
+    fig_los = px.density_heatmap(
+        los,
+        x="severity_level",
+        y="department",
+        z="avg_los",
+        histfunc="avg",
+        text_auto=".2f",
+        title="LOS Analysis",
+        color_continuous_scale="Teal",
+    )
+    fig_los.update_traces(texttemplate="%{z:.2f}", hovertemplate="Severity=%{x}<br>Department=%{y}<br>Avg LOS=%{z:.2f}<extra></extra>")
+    fig_los.update_layout(xaxis_title="Severity Level", yaxis_title="Department")
+    st.plotly_chart(add_top_x_axis(chart_layout(fig_los, 540)), use_container_width=True)
 
 # Readmission Risk can stay full width for readability.
-st.markdown('<div class="section-title">Readmission Risk</div>', unsafe_allow_html=True)
 if {"department", "age_group", "readmitted_30_days"}.issubset(filtered.columns):
     readm = filtered.groupby(["department", "age_group"], as_index=False).agg(
         readmission=("readmitted_30_days", "mean")
@@ -566,9 +726,9 @@ if {"department", "age_group", "readmitted_30_days"}.issubset(filtered.columns):
         title="Readmission Risk",
         color_continuous_scale="Teal",
     )
-    fig_readm.update_traces(texttemplate="%{z:.2f}%")
+    fig_readm.update_traces(texttemplate="%{z:.2f}%", hovertemplate="Age Group=%{x}<br>Department=%{y}<br>Readmission=%{z:.2f}%<extra></extra>")
     fig_readm.update_layout(xaxis_title="Age Group", yaxis_title="Department")
-    st.plotly_chart(chart_layout(fig_readm, 500), use_container_width=True)
+    st.plotly_chart(add_top_x_axis(chart_layout(fig_readm, 540)), use_container_width=True)
 
 # Executive Decision Summary appears ONCE only, at the bottom.
 colorful_decision_cards()
