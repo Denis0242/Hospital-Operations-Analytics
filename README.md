@@ -15,7 +15,7 @@ This project provides an executive-level hospital operations dashboard designed 
 
 > **Where are operational bottlenecks, capacity constraints, and performance risks across the hospital?**
 
-Using Tableau, SQL, Excel, and healthcare KPI reporting techniques, the dashboard combines operational KPIs, department performance monitoring, capacity strain analysis, patient flow analytics, and readmission tracking to support data-driven decision-making.
+Using Tableau, SQL, Python, Excel, and Streamlit, the dashboard combines operational KPIs, department performance monitoring, capacity strain analysis, patient flow analytics, and readmission tracking to support data-driven decision-making.
 
 The solution enables hospital leadership to:
 
@@ -25,6 +25,15 @@ The solution enables hospital leadership to:
 * Optimize resource allocation
 * Reduce operational risk
 * Support patient care delivery through KPI-driven insights
+
+Expected business value includes:
+
+* Improved hospital capacity utilization
+* Faster identification of operational bottlenecks
+* Improved patient throughput
+* Reduced operational strain
+* Enhanced healthcare performance monitoring
+* Better executive decision-making
 
 ---
 
@@ -53,8 +62,6 @@ This dashboard helps hospital leadership monitor operational KPIs, identify capa
 
 # KPIs
 
-The Executive Dashboard monitors:
-
 | KPI                          | Business Purpose                        |
 | ---------------------------- | --------------------------------------- |
 | Total Patients               | Measures hospital utilization           |
@@ -70,8 +77,6 @@ The Executive Dashboard monitors:
 # Dashboard Overview
 
 The dashboard provides a comprehensive view of hospital operations, patient flow, capacity management, and department performance.
-
-The solution consists of two executive reporting dashboards:
 
 ### Dashboard 1 – Hospital Operations Executive Dashboard
 
@@ -188,14 +193,43 @@ Increase operational focus on Emergency Department and ICU services through staf
 
 ---
 
+# EDA + Feature Engineering
+
+The project includes exploratory data analysis, data validation, and KPI engineering designed to improve hospital operations monitoring and healthcare performance reporting.
+
+### Key Activities
+
+* Missing value validation
+* Duplicate encounter checks
+* Department-level performance validation
+* Length of Stay (LOS) analysis
+* Capacity utilization analysis
+* Readmission monitoring
+* Wait-time analysis
+* KPI consistency validation
+
+### Engineered Features
+
+* occupancy_band
+* capacity_strain_score
+* hospital_alert_status
+* los_category
+* readmission_risk_level
+* bottleneck_category
+* treatment_success_flag
+
+These engineered features support operational monitoring, capacity planning, patient flow analysis, and executive decision-making.
+
+---
+
 # Analytics Workflow
 
 ```text
 Business Problem
         ↓
-Data Collection
+EDA + Cleaning
         ↓
-Data Cleaning
+Feature Engineering
         ↓
 KPI Engineering
         ↓
@@ -203,7 +237,7 @@ Operational Analysis
         ↓
 Dashboard Development
         ↓
-Insight Generation
+Business Insights
         ↓
 Decision Support
         ↓
@@ -236,9 +270,12 @@ Prioritize capacity management and throughput improvement efforts before expandi
 
 * Tableau
 * SQL
+* Python
+* Streamlit
 * Excel
 * CSV Data Modeling
 * Healthcare KPI Reporting
+* GitHub
 
 ---
 
@@ -262,7 +299,25 @@ Hospital-Operations-Analytics/
 ├── tableau/
 │   └── Hospital_Operations_Analytics.twbx
 
+├── notebooks/
+│   └── healthcare_operations_eda.ipynb
+
+├── app/
+│   └── streamlit_app.py
+
 └── README.md
+```
+
+---
+
+# How to Run the Project
+
+```bash
+git clone https://github.com/Denis0242/Hospital-Operations-Analytics
+
+pip install -r requirements.txt
+
+streamlit run app/streamlit_app.py
 ```
 
 ---
@@ -283,4 +338,3 @@ Hospital-Operations-Analytics/
 * No Protected Health Information (PHI) is included.
 * Project developed for educational and demonstration purposes.
 * This project is not affiliated with or endorsed by Kaiser Permanente or any healthcare organization.
-
