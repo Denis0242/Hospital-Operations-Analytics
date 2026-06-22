@@ -7,102 +7,105 @@ https://public.tableau.com/app/profile/denis.king
 
 ---
 
-## Executive Summary
+# Executive Summary
 
 Hospital leaders must continuously monitor patient flow, capacity utilization, operational bottlenecks, and care outcomes to maintain efficient healthcare delivery.
 
-This project provides an executive-level hospital operations dashboard designed to answer one key business question:
+This project provides an executive-level hospital operations dashboard designed to answer one critical business question:
 
-> **Where are operational bottlenecks, capacity issues, and performance risks across the hospital?**
+> **Where are operational bottlenecks, capacity constraints, and performance risks across the hospital?**
 
-The solution combines operational KPIs, department performance monitoring, capacity strain analysis, patient flow analytics, and readmission tracking to support data-driven decision-making.
+Using Tableau, SQL, Excel, and healthcare KPI reporting techniques, the dashboard combines operational KPIs, department performance monitoring, capacity strain analysis, patient flow analytics, and readmission tracking to support data-driven decision-making.
+
+The solution enables hospital leadership to:
+
+* Monitor hospital-wide operational performance
+* Identify capacity constraints and bottlenecks
+* Improve patient throughput
+* Optimize resource allocation
+* Reduce operational risk
+* Support patient care delivery through KPI-driven insights
 
 ---
 
-## Business Problem
+# Business Problem
 
-Hospitals face ongoing challenges related to:
+Hospitals face ongoing operational challenges including:
 
 * High bed occupancy rates
 * Emergency Department congestion
 * Patient throughput delays
-* Readmission pressure
 * Capacity strain across departments
 * Resource allocation inefficiencies
+* Readmission pressure
 
-Without centralized reporting, leadership teams may struggle to quickly identify operational risks and prioritize improvement initiatives.
+Without centralized reporting, leadership teams may struggle to identify emerging operational risks and prioritize improvement initiatives.
 
-This dashboard was developed to provide visibility into hospital performance, patient flow efficiency, and operational bottlenecks across multiple service lines.
+This project was developed to provide visibility into hospital performance, patient flow efficiency, and operational bottlenecks across multiple service lines.
 
-----
+---
+
 # Decision Support Use Case
 
-This dashboard helps hospital leadership monitor operational KPIs, identify capacity constraints, evaluate department performance, track patient flow efficiency, and support data-driven decisions related to resource allocation, patient throughput, and operational improvement initiatives.
+This dashboard helps hospital leadership monitor operational KPIs, identify capacity constraints, evaluate department performance, track patient flow efficiency, and support decisions related to resource allocation, patient throughput, capacity planning, and operational improvement initiatives.
 
 ---
 
-## Dataset
-
-### Source
-
-Synthetic Healthcare Operations Dataset
-
-### Records
-
-950 Patient Encounters
-
-### Time Period
-
-2024 – 2026
-
-### Departments
-
-* Emergency Department (ED)
-* ICU
-* Surgery / OR
-* Cardiology
-* Radiology
-* Pharmacy
-* Laboratory
-* Orthopedics
-* General Medicine
-* Outpatient / Ambulatory Care
-
-### Data Type
-
-Portfolio-safe synthetic healthcare data.
-
----
-
-## Executive KPIs
+# KPIs
 
 The Executive Dashboard monitors:
 
-* Total Patients
-* Average Length of Stay (LOS)
-* Bed Occupancy Rate
-* Readmission Rate
-* Average ER Wait Time
-* Treatment Success Rate
-* Patient Satisfaction Score
+| KPI                          | Business Purpose                        |
+| ---------------------------- | --------------------------------------- |
+| Total Patients               | Measures hospital utilization           |
+| Average Length of Stay (LOS) | Measures operational efficiency         |
+| Bed Occupancy Rate           | Measures capacity utilization           |
+| Readmission Rate             | Measures quality and continuity of care |
+| Average ER Wait Time         | Measures patient flow efficiency        |
+| Treatment Success Rate       | Measures clinical outcomes              |
+| Patient Satisfaction Score   | Measures patient experience             |
 
 ---
 
-# Dashboard 1: Hospital Operations Executive Dashboard
+# Dashboard Overview
+
+The dashboard provides a comprehensive view of hospital operations, patient flow, capacity management, and department performance.
+
+The solution consists of two executive reporting dashboards:
+
+### Dashboard 1 – Hospital Operations Executive Dashboard
+
+Focus Areas:
+
+* Executive KPI Monitoring
+* Hospital Alert Summary
+* Operational Bottleneck Analysis
+* Capacity Strain Monitoring
+* Department Performance Evaluation
+* Executive Decision Support
+
+### Dashboard 2 – Patient Flow & Capacity Analytics
+
+Focus Areas:
+
+* Admissions Trend Analysis
+* Throughput Monitoring
+* Visit Outcome Analysis
+* Treatment Success Tracking
+* Length of Stay Analysis
+* Readmission Risk Monitoring
+
+These dashboards support healthcare leadership, operations teams, and decision-support analysts responsible for hospital performance management.
+
+---
+
+# Dashboard Screenshots
+
+## Hospital Operations Executive Dashboard
 
 ![Hospital Operations Executive Dashboard](screenshots/hero_dashboard.png)
 
-### Key Components
-
-* Executive KPI Scorecard
-* Hospital Alert Summary
-* Operational Bottleneck Analysis
-* Capacity Strain Heatmap
-* Department Performance Matrix
-* Monthly KPI Trend Analysis
-* Executive Decision Support Summary
-
-### Executive KPI Scorecard
+### KPI Scorecard
 
 ![KPI Scorecard](screenshots/kpi_scorecard.png)
 
@@ -116,20 +119,11 @@ The Executive Dashboard monitors:
 
 ---
 
-# Dashboard 2: Patient Flow & Capacity Analytics
+## Patient Flow & Capacity Analytics Dashboard
 
 ![Patient Flow & Capacity Analytics](screenshots/patient_flow_dashboard.png)
 
-### Key Components
-
-* Admissions Trend
-* Throughput Analysis
-* Visit Outcome Distribution
-* Treatment Success Monitoring
-* Length of Stay Analysis
-* Readmission Risk Analysis
-
-### Treatment Success
+### Treatment Success Analysis
 
 ![Treatment Success](screenshots/treatment_success.png)
 
@@ -137,84 +131,108 @@ The Executive Dashboard monitors:
 
 ![LOS Analysis](screenshots/los_analysis.png)
 
-### Readmission Risk
+### Readmission Risk Analysis
 
 ![Readmission Risk](screenshots/readmission_risk.png)
 
 ---
 
-## Key Insights
+# Key Insight
 
-### Insight
-
-Emergency Department and ICU services exhibit the highest operational strain due to elevated occupancy levels and longer wait times.
-
-### Action
-
-Prioritize staffing and resource allocation within high-demand departments to reduce delays and improve patient flow.
-
-### Recommendation
-
-Monitor occupancy, wait time, and readmission trends monthly to proactively identify capacity risks.
-
-### Decision
-
-Focus operational improvement efforts on Emergency and ICU services to enhance efficiency and patient experience.
+Emergency Department and ICU services experience the highest operational strain due to elevated occupancy levels, longer wait times, and increased throughput pressure, making them the primary drivers of hospital capacity challenges.
 
 ---
+
 # Business Impact
 
-This dashboard supports hospital leadership by transforming operational data into actionable insights that improve resource planning and patient care delivery.
+This dashboard supports hospital leadership by transforming operational data into actionable insights that improve resource planning, patient flow efficiency, and care delivery.
 
 ### Operational Benefits
 
-* Identifies high-strain departments requiring staffing and resource allocation adjustments.
-* Monitors bed occupancy, patient throughput, and wait times to support capacity planning.
-* Tracks readmission trends to highlight patient populations and departments requiring intervention.
-* Improves visibility into Length of Stay (LOS) drivers across severity levels and departments.
-* Supports executive decision-making through centralized KPI monitoring and operational performance reporting.
+* Identifies departments experiencing capacity strain
+* Improves visibility into bed occupancy and throughput performance
+* Highlights readmission trends requiring intervention
+* Supports monitoring of Length of Stay drivers
+* Centralizes operational KPI reporting
 
 ### Business Value
 
-* Enables proactive identification of operational bottlenecks.
-* Supports data-driven capacity management and workflow optimization.
-* Improves hospital performance monitoring and reporting efficiency.
-* Enhances patient flow visibility across departments.
-* Provides a scalable framework for healthcare operational analytics and decision support.
-
-
----
-
-## Skills Demonstrated
-
-### Healthcare Analytics
-
-* Hospital Operations Analytics
-* Patient Flow Analysis
-* Readmission Monitoring
-* Capacity Planning
-* Length of Stay Analysis
-* Healthcare KPI Reporting
-
-### Business Intelligence
-
-* Tableau Dashboard Development
-* Executive Reporting
-* Performance Monitoring
-* Decision Support Analytics
-* Operational Reporting
-
-### Data Analytics
-
-* KPI Design
-* Trend Analysis
-* Heatmap Visualization
-* Department Benchmarking
-* Performance Measurement
+* Enables proactive identification of operational bottlenecks
+* Supports data-driven capacity management
+* Improves workflow optimization
+* Enhances hospital performance reporting
+* Strengthens executive decision-making
 
 ---
 
-## Tools Used
+# Recommendation
+
+Increase operational focus on Emergency Department and ICU services through staffing optimization, capacity planning, throughput improvements, and proactive monitoring of occupancy, wait times, and readmission trends.
+
+---
+
+# Data Dictionary
+
+| Field                  | Description                         |
+| ---------------------- | ----------------------------------- |
+| patient_id             | Unique patient encounter identifier |
+| department             | Hospital department                 |
+| admission_date         | Patient admission date              |
+| discharge_date         | Patient discharge date              |
+| bed_occupancy_rate     | Department occupancy percentage     |
+| er_wait_time           | Emergency Department wait time      |
+| length_of_stay         | Patient length of stay              |
+| readmission_flag       | Indicates readmission status        |
+| treatment_success_rate | Treatment outcome indicator         |
+| patient_satisfaction   | Patient satisfaction score          |
+
+---
+
+# Analytics Workflow
+
+```text
+Business Problem
+        ↓
+Data Collection
+        ↓
+Data Cleaning
+        ↓
+KPI Engineering
+        ↓
+Operational Analysis
+        ↓
+Dashboard Development
+        ↓
+Insight Generation
+        ↓
+Decision Support
+        ↓
+Business Impact
+```
+
+---
+
+# Executive Decision Summary
+
+### Insight
+
+Emergency Department and ICU services experience the highest operational strain due to elevated occupancy levels, longer wait times, and increased throughput pressure.
+
+### Action
+
+Monitor occupancy, wait times, Length of Stay, and readmission trends while prioritizing high-strain departments.
+
+### Recommendation
+
+Improve staffing allocation, capacity planning, and patient flow processes within Emergency and ICU services.
+
+### Decision
+
+Prioritize capacity management and throughput improvement efforts before expanding service demand.
+
+---
+
+# Tools Used
 
 * Tableau
 * SQL
@@ -224,7 +242,7 @@ This dashboard supports hospital leadership by transforming operational data int
 
 ---
 
-## Repository Structure
+# Repository Structure
 
 ```text
 Hospital-Operations-Analytics/
@@ -233,7 +251,7 @@ Hospital-Operations-Analytics/
 │   └── healthcare_operations_dashboard_950_rows_final.csv
 
 ├── screenshots/
-│   ├── hero_dashboard1.png
+│   ├── hero_dashboard.png
 │   ├── kpi_scorecard.png
 │   ├── capacity_strain_heatmap.png
 │   ├── department_performance_matrix.png
@@ -249,8 +267,20 @@ Hospital-Operations-Analytics/
 
 ---
 
-## Disclaimer
+# Future Improvements
 
-This project was created for educational and portfolio purposes only.
+* Add predictive modeling for readmission risk
+* Add patient demand forecasting
+* Add department staffing optimization analysis
+* Add automated KPI refresh workflows
+* Connect to Snowflake, Redshift, or cloud-based healthcare data warehouses
 
-The dataset is synthetic, contains no protected health information (PHI), and is not affiliated with or endorsed by Kaiser Permanente.
+---
+
+# Disclaimer
+
+* Dataset is synthetic and created for portfolio purposes.
+* No Protected Health Information (PHI) is included.
+* Project developed for educational and demonstration purposes.
+* This project is not affiliated with or endorsed by Kaiser Permanente or any healthcare organization.
+
