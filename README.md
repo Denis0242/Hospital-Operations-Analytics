@@ -34,6 +34,11 @@ Without centralized reporting, leadership teams may struggle to quickly identify
 
 This dashboard was developed to provide visibility into hospital performance, patient flow efficiency, and operational bottlenecks across multiple service lines.
 
+----
+# Decision Support Use Case
+
+This dashboard helps hospital leadership monitor operational KPIs, identify capacity constraints, evaluate department performance, track patient flow efficiency, and support data-driven decisions related to resource allocation, patient throughput, and operational improvement initiatives.
+
 ---
 
 ## Dataset
